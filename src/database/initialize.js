@@ -8,7 +8,7 @@ dotenv.config({path:"/workspaces/BackendApp/.env"})
 const connectDB = async () =>{
     try{
         console.log(process.env.databaseURL);
-        const connectionStatus = mongoose.connect(`${process.env.databaseURL}/${DB_NAME}`)
+        const connectionStatus = await mongoose.connect(`${process.env.databaseURL}`)
         console.log(`Connected Succesfully! HOST: ${connectionStatus}`);
     }
     catch(error){
