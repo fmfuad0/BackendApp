@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 const userSchema= new Schema({
     username:{
-        type:String,
+        type:String, ///cloudinary url
         required: true,
         lowercase:true,
         unique:true,
@@ -29,11 +29,11 @@ const userSchema= new Schema({
         index:true,
     },
     avatar:{
-        type:String,
+        type:String, ///cloudinary url
         required:true
     },
     coverImage:{
-        type:String,
+        type:String, //cloudinary url
     },
     watchHistory:{
         type:Schema.Types.ObjectId,

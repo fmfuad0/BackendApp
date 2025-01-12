@@ -4,11 +4,11 @@ import jwt from "jsonwebtoken"
 
 const videoSchema = new Schema({
     videoFile:{
-        type:String,  ///cloudynary url
+        type:String,  ///cloudinary url
         required:true,
     },
     thumbnail:{
-        type:String,  ///cloudynary url
+        type:String,  ///cloudinary url
         required:true,
     },
     title:{
