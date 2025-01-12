@@ -1,6 +1,8 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { FILE } from 'dns';
 import { response } from 'express';
 import fs from "fs"
+import { fileURLToPath } from 'url';
 
 cloudinary.config({
     cloud_name: process.env.cloudinaryCloudName,
@@ -11,21 +13,27 @@ cloudinary.config({
 // Upload an file
 const uploadOnCloudinary = async (FILEPATH) => {
     try {
-        const uploadResult = await cloudinary.uploader.upload
+        const response = await cloudinary.uploader.upload
             (
                 FILEPATH,
                 {
-                    public_id: 'shoes',
+                    resource_type: "auto",
                 }
             )
-            console.log("File uploaded successfuly!!", response.url)
+        console.log(`file uploaded successfuly!!${"\n"}..link: ${response.url}`)
+        fs.unlink(FILEPATH, (err) => {
+            if (err) {
+                console.error(`Error removing file: ${err}`);
+            }
+            else
+            console.log(`File has been successfully removed.`);
+        });
+        return response
     }
-    catch(error) {
-            fs.unlink(FILEPATH)//file removed
-            return null
-        };
-    console.log(uploadResult);
+    catch (error) {
+        return null
+    };
 
 };
 
-export {uploadOnCloudinary}
+export { uploadOnCloudinary }

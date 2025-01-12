@@ -19,4 +19,4 @@ class ApiError extends Error {
     }
 }
 
-export const apiError= constructor
+export const apiError = constructor
