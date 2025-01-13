@@ -51,6 +51,7 @@ userSchema.pre("save", async function (next) {
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) {
+    console.log(password);
     return await bcryp.compare(password, this.password)
 }
 
