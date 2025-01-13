@@ -1,8 +1,7 @@
 import { Router } from "express";
-import { 
+import {
     registerUser,
-    loginUser, 
-    ///secured
+    loginUser,
     logoutUser,
     refreshAccessToken,
     changePassword,
@@ -10,32 +9,37 @@ import {
     updateUserDetails,
     updateUserAvatar,
     updateUserCoverImage
-} from "../controllers/user.controllers.js"
-import { upload } from "../middlewares/multer.middlewares.js"
-const router = Router()
+} from "../controllers/user.controllers.js";
+import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
 
+const router = Router();
+
+// Register route
 router.route("/register").post(
     upload.fields([
-        {
-            name: "avatar",
-            maxCount: 1
-        },
-        {
-            name: "coverImage",
-            maxCount: 1
-        }
-    ]), registerUser)
-router.route("/login").post(loginUser)
+        { name: "avatar", maxCount: 1 },
+        { name: "coverImage", maxCount: 1 }
+    ]), 
+    registerUser
+);
 
-///secured routes
-router.route("/logout").get(verifyJWT, logoutUser)
-router.route("/refresh-token").post(refreshAccessToken)
-router.route("/change-password").post(verifyJWT, changePassword)
-router.route("/get-current-user").post(getCurrentUser)
-router.route("/update-user-details").post(updateUserDetails)
-router.route("/update-user-avatar").post(updateUserAvatar)
-router.route("/update-user-cover-image").post(updateUserCoverImage)
+// Login route
+router.route("/login").post(loginUser);
 
+// Secured routes
+router.route("/logout").get(verifyJWT, logoutUser);
+router.route("/refresh-access-token").post(refreshAccessToken);
+router.route("/change-password").post(verifyJWT, changePassword);
+router.route("/get-current-user").post(getCurrentUser);
+router.route("/update-user-details").post(verifyJWT, updateUserDetails);
 
-export default router
+// Avatar and cover image routes
+router.route("/update-user-avatar").post(
+    upload.single("avatar"),verifyJWT,
+    updateUserAvatar
+);
+
+router.route("/update-user-cover-image").post(upload.single("coverImage"), verifyJWT, updateUserCoverImage);
+
+export default router;
