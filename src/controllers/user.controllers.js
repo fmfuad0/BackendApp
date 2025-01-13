@@ -6,6 +6,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
 import fs from "fs"
+import { log } from "console";
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -247,9 +248,11 @@ const getCurrentUser = asyncHandler(async (req, res)=>{
 
 const updateUserDetails = asyncHandler(async(req, res)=>{
     const {newFullName, newEmail } = req.body
-    console.log(req.user);
+    console.log(req.body);
+    console.log(newEmail);
+    
     if(!newFullName || !newEmail)
-        throw new apiError(400, "All fields are required.")
+        throw new apiError(40, "All fields are required.")
     
     await User.findByIdAndUpdate(
             req.user?._id,
