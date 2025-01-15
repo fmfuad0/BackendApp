@@ -7,6 +7,9 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
 import fs from "fs"
 import { subscribe } from "diagnostics_channel";
+import { lookup } from "dns";
+import { getPriority } from "os";
+import { pipeline } from "stream";
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
@@ -384,7 +387,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             }
         }
     ]);
-    
+
     if (!channel || channel?.length === 0) {
         throw new apiError(404, "Channel not found");
     }
@@ -395,12 +398,53 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     });
 });
 
-const getWatchHistory = asyncHandler(async (req, res)=>{
+const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
-            
+            $match: {
+                _id: new mongoose.Types.objectId(req.user._id)
+            },
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "videos",
+                            localField: "_id",
+                            foreignField: "owner",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields:{
+                            $first:{
+                                owner: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
         }
     ])
+
+    return res
+    .status(200)
+    .json(
+        new apiResponse(200, user[0].watchHistory, "Watch history fetched sccessfully")
+    )
+            
 })
 
 

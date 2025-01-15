@@ -35,10 +35,12 @@ const userSchema = new Schema({
     coverImage: {
         type: String, //cloudinary url
     },
-    watchHistory: {
-        type: Schema.Types.ObjectId,
-        ref: 'Video'
-    },
+    watchHistory: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Video"
+        }
+    ],
     refreshToken: {
         type: String
     }
