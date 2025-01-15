@@ -53,7 +53,7 @@ const registerUser = asyncHandler(async (req, res) => {
                 console.log(`File has been successfully removed.`);
         });
 
-        throw new apiError(409, `User already existsz`)
+        throw new apiError(409, `User already exists`)
     }
     // Handle avatar and cover image files
     console.log(req.files);
@@ -104,7 +104,7 @@ const registerUser = asyncHandler(async (req, res) => {
         console.log("User registered successfully");
         return res.json(new apiResponse(200, createdUser, "User registered successfully"));
     }
-});
+})
 
 const loginUser = asyncHandler(async (req, res) => {
     ///req->body ->data
@@ -431,7 +431,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                             owner: {
                                 $first: "$owner"
                             },
-                            watchhhhistory: "$watchHistory"
                         }
                     }
                 ]
