@@ -32,8 +32,8 @@ router.route("/login").post(loginUser);
 router.route("/logout").get(verifyJWT, logoutUser);
 router.route("/refresh-access-token").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changePassword);
-router.route("/get-current-user").post(getCurrentUser);
-router.route("/update-user-details").post(verifyJWT, updateUserDetails);
+router.route("/current-user").post(getCurrentUser);
+router.route("/update-account").patch(verifyJWT, updateUserDetails);
 
 // Avatar and cover image routes
 router.route("/update-user-avatar").post(
@@ -42,6 +42,8 @@ router.route("/update-user-avatar").post(
 );
 
 router.route("/update-user-cover-image").post(upload.single("coverImage"), verifyJWT, updateUserCoverImage);
-router.route("/subscribe").post(getUserChannelProfile);
+router.route("/c/:username").get(getUserChannelProfile);
+router.route("/history").get(verifyJWT, getWatchHistory)
 
 export default router;
+    
