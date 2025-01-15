@@ -3,13 +3,11 @@ import { apiError } from "../utils/apiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
+import mongoose from "mongoose";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
 import fs from "fs"
-import { subscribe } from "diagnostics_channel";
-import { lookup } from "dns";
-import { getPriority } from "os";
-import { pipeline } from "stream";
+
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
@@ -27,7 +25,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     const { username, fullName, email, password } = req.body;
-    console.log(fullName);
 
     // Validate fields
     if (!fullName || !email || !username || !password) {
@@ -157,7 +154,6 @@ const loginUser = asyncHandler(async (req, res) => {
             "User logged in successfully"
         ));
 });
-
 
 const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, {
@@ -325,8 +321,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 })
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-    const { username } = req.body || req.params;
-
+    const { username } = req.params;
+    
     if (!username?.trim()) {
         throw new apiError(400, "Username is missing");
     }
@@ -402,8 +398,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.objectId(req.user._id)
-            },
+                _id: new mongoose.Types.ObjectId(req.user._id)
+                
+            }
+        },
+        {
             $lookup: {
                 from: "videos",
                 localField: "watchHistory",
@@ -412,9 +411,9 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                 pipeline: [
                     {
                         $lookup: {
-                            from: "videos",
-                            localField: "_id",
-                            foreignField: "owner",
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
                             as: "owner",
                             pipeline: [
                                 {
@@ -428,26 +427,23 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                         }
                     },
                     {
-                        $addFields:{
-                            $first:{
-                                owner: "$owner"
-                            }
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            },
+                            watchhhhistory: "$watchHistory"
                         }
                     }
                 ]
             }
         }
     ])
-
     return res
     .status(200)
     .json(
-        new apiResponse(200, user[0].watchHistory, "Watch history fetched sccessfully")
+        new apiResponse(200, user[0].watchHistory, "Watch history fetched successfully")
     )
-            
 })
-
-
 export {
     registerUser,
     loginUser,
@@ -458,5 +454,6 @@ export {
     updateUserDetails,
     updateUserAvatar,
     updateUserCoverImage,
+    getUserChannelProfile,
     getWatchHistory
 }
