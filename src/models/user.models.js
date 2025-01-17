@@ -53,7 +53,7 @@ userSchema.pre("save", async function (next) {
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) {
-    console.log(password);
+    // console.log(password);
     return await bcryp.compare(password, this.password)
 }
 
@@ -72,7 +72,7 @@ userSchema.methods.generateAccessToken = function () {
             expiresIn: process.env.accessTokenExpiry
         }
     );
-    console.log("Access token created");
+    // console.log("Access token created");
     return token
 }
 
@@ -86,7 +86,7 @@ userSchema.methods.generateRefreshToken = function () {
             expiresIn: process.env.refreshTokenExpiry
         }
     )
-    console.log("Refresh token created");
+    // console.log("Refresh token created");
     return token
 }
 

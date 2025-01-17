@@ -1,16 +1,17 @@
-import mongoose from "mongoose"
-import { Comment } from "../models/comment.models.js"
-import { apiError } from "../utils/apiError.js"
-import { apiResponse } from "../utils/apiResponse.js"
-import { asyncHandler } from "../utils/asyncHandler.js"
-import { Video } from "../models/video.models.js"
+import mongoose from "mongoose";
+import { Comment } from "../models/comment.models.js";
+import { apiError } from "../utils/apiError.js";
+import { apiResponse } from "../utils/apiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../models/video.models.js";
+import  healthCheckObject  from "./healthcheck.controllers.js";
 
-
-const getVideoComments = asyncHandler(async (req, res) => {
+// Fetch comments for a specific video with pagination
+const getVideoComments = asyncHandler(async (req, res, next) => {
     const { videoId } = req.params;
 
     if (!videoId) {
-        throw new apiError("Video not found. Missing ID");
+        return next(new apiError(400, "Video not found. Missing ID"));
     }
 
     // Convert videoId to ObjectId
@@ -19,120 +20,127 @@ const getVideoComments = asyncHandler(async (req, res) => {
     // Fetch the video by its ID
     const video = await Video.findById(vvid);
     if (!video) {
-        throw new apiError("Video not found.");
+        return next(new apiError(400, "Video not found."));
     }
 
-    // Optional pagination
+    // Pagination logic
     const { page = 1, limit = 10 } = req.query;
     const skip = (page - 1) * limit;
 
-    // Aggregation to get comments for the video
-    const videoComments = await Video.aggregate([
-        {
-            $match: {
-                _id: vvid
-            }
-        },
-        {
-            $lookup: {
-                from: "comments", // Collection name
-                localField: "_id", // Field in Video model
-                foreignField: "video", // Field in Comment model (assumed)
-                as: "videoComments"
-            }
-        },
-        // {
-        //     $unwind: "$videoComments" // Optional, to flatten comments if needed
-        // },
-        {
-            $skip: skip // For pagination
-        },
-        {
-            $limit: limit // For pagination
-        }
-    ]);
+    try {
+        // Aggregation to fetch video comments
+        const videoComments = await Video.aggregate([
+            {
+                $match: { _id: vvid }
+            },
+            {
+                $lookup: {
+                    from: "comments", // Reference to the "comments" collection
+                    localField: "_id", // Local field in Video model
+                    foreignField: "video", // Foreign field in Comment model
+                    as: "videoComments"
+                }
+            },
+            { $unwind: "$videoComments" }, // Optional: Unwind if you want each comment as a separate document
+            { $skip: skip }, // Pagination
+            { $limit: limit } // Pagination limit
+        ]);
 
-    return res.status(200).json(
-        new apiResponse(200, videoComments, "Video comments fetched successfully")
-    );
+        // Send response with video comments        
+        return res.status(200).json(
+            new apiResponse(200, videoComments, "Video comments fetched successfully")
+        );
+    } catch (error) {
+        return next(new apiError(400, "Could not fetch video comments"));
+    }
 });
 
-const addComment = asyncHandler(async (req, res) => {
-    // TODO: add a comment to a video
-
-    const { content, videoId } = req.body
-    console.log(content + videoId);
-
-    if (!content)
-        throw new apiError(400, "Content is missing")
-
-    const createdComment = await Comment.create({
-        content: content,
-        video: await Video.findById(new mongoose.Types.ObjectId(videoId)),
-        owener: req.user
-    })
-
-    if (!createdComment)
-        throw new apiError(400, "Something went wrong while creating comment")
-    findComment(createdComment._id)
-    return res
+// Add a comment to a video
+const addComment = asyncHandler(async (req, res, next) => {
+    const { content, videoId } = req.body;
+    // console.log("add comment: ", content, videoId, req.user._id);
+    
+    if (!content || !videoId) {
+        return next(new apiError(400, "Content or videoId is missing"));
+    }
+    
+    try {
+        const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
+        if (!video) {
+            return next(new apiError(404, "Video not found"));
+        }
+        const createdComment = await Comment.create({
+            content: content,
+            video: video._id,
+            owner: req.user._id // Assuming `user_id` is added via authentication middleware
+        });
+        healthCheckObject.createdComment = createdComment
+        return res
         .status(200)
         .json(
             new apiResponse(200, createdComment, "Comment created successfully")
-        )
-})
+        );
+    } catch (error) {
+        return next(new apiError(40, "Failed to create comment"));
+    }
+});
 
-const updateComment = asyncHandler(async (req, res) => {
-    // TODO: update a comment    
-    const {commentId} = req.params
-    const {newContent} = req.body
-    if (!commentId)
-        throw new apiError(400, "Comment id is missing")
+// Update an existing comment
+const updateComment = asyncHandler(async (req, res, next) => {
+    const { commentId } = req.params;
+    const { newContent } = req.body;
 
-    const comment = await Comment.findById(new mongoose.Types.ObjectId(commentId))
+    if (!commentId || !newContent) {
+        return next(new apiError(400, "Comment ID or new content is missing"));
+    }
 
-    if (!comment)
-        throw new apiError(404, "Comment not found")
-    const updatedComment = await Comment.findByIdAndUpdate(
-        comment?._id,
-        {
-            $set: {
-                content: newContent
-            }
-        },
-        { new: true }
-    )    
-    return res
-    .status(200)
-    .json(
-        new apiResponse(200, updatedComment, "Comment Updated successfully")
-    )
-})
+    try {
+        const comment = await Comment.findById(new mongoose.Types.ObjectId(commentId));
+        if (!comment) {
+            return next(new apiError(404, "Comment not found"));
+        }
 
-const deleteComment = asyncHandler(async (req, res) => {
-    // TODO: delete a comment
-    const {commentId} = req.params
-    if (!commentId)
-        throw new apiError(400, "Comment id is missing")
-    const comment = await Comment.findById(new mongoose.Types.ObjectId(commentId))
-    if (!comment)
-        throw new apiError(404, "Comment not found")
-    const updatedComment = await Comment.findByIdAndDelete(
-        comment?._id,
-    )
-    console.log(updatedComment);
-    console.log("Comment deleted");
-    
-    return res
-    .status(200)
-    .json(
-        new apiResponse(200, updatedComment, "Comment deleted successfully")
-    )
-})
+        const updatedComment = await Comment.findByIdAndUpdate(
+            comment._id,
+            { $set: { content: newContent } },
+            { new: true }
+        );
+
+        return res.status(200).json(
+            new apiResponse(200, updatedComment, "Comment updated successfully")
+        );
+    } catch (error) {
+        return next(new apiError(400, "Could not update comment"));
+    }
+});
+
+// Delete an existing comment
+const deleteComment = asyncHandler(async (req, res, next) => {
+    const { commentId } = req.params;
+
+    if (!commentId) {
+        return next(new apiError(400, "Comment ID is missing"));
+    }
+
+    try {
+        const comment = await Comment.findById(new mongoose.Types.ObjectId(commentId));
+        if (!comment) {
+            return next(new apiError(404, "Comment not found"));
+        }
+
+        const deletedComment = await Comment.findByIdAndDelete(comment._id);
+
+        return res.status(200).json(
+            new apiResponse(200, deletedComment, "Comment deleted successfully")
+        );
+    } catch (error) {
+        return next(new apiError(400, "Could not delete comment"));
+    }
+});
 
 export {
     getVideoComments,
     addComment,
     updateComment,
     deleteComment
-}
+};

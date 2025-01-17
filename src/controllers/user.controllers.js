@@ -121,10 +121,10 @@ const loginUser = asyncHandler(async (req, res) => {
     };
 
     const { email, username, password } = req.body;
+    
     if (!email && !username) {
         throw new apiError("Username or email is required");
     }
-
     const user = await User.findOne({
         $or: [{ username }, { email }]
     });
@@ -138,7 +138,7 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new apiError("Password incorrect");
     }
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-    console.log(`${accessToken}\n\n${refreshToken}`);
+    // console.log(`${accessToken}\n\n${refreshToken}`);
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
     return res.status(200)
@@ -213,6 +213,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changePassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword, confirmPassword } = req.body
+    // console.log("log: ", oldPassword, newPassword, confirmPassword);
+    
     if (!oldPassword || !newPassword || !confirmPassword)
         throw new apiError(400, "All fields are required")
     if (newPassword !== confirmPassword)
@@ -233,7 +235,7 @@ const changePassword = asyncHandler(async (req, res) => {
         new apiResponse(
             200,
             {},
-            "Password changed successuflly."
+            "Password changed successufully."
         )
     )
 })
@@ -443,6 +445,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         new apiResponse(200, user[0].watchHistory, "Watch history fetched successfully")
     )
 })
+
 export {
     registerUser,
     loginUser,

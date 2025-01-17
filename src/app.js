@@ -4,7 +4,8 @@ import express from "express";
 import dotenv from 'dotenv';
 import userRouter from "./routes/user.routs.js";
 dotenv.config({ path: './.env' });
-
+import commentRouter from "./routes/comment.routes.js";
+import healthCheckRouter from "./routes/healthCheck.routes.js";
 const app = express();
 
 // Enable CORS with credentials
@@ -19,11 +20,15 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 // Routes
-app.use("/api/v1/users", userRouter);
 app.get("/", (req, res) => {
     console.log("User entry point");
     res.send("Hello, World!");
 });
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/comments", commentRouter);
+app.use("/api/v1/health-check", healthCheckRouter);
 
-// Start server
+// app.use("/api/v1/videos", videoRouter);
+// app.use("/api/v1/subscription", subscriptionRouter);
+
 export { app };
