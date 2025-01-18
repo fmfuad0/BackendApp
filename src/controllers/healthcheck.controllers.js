@@ -84,14 +84,14 @@ const health = async (req, res, next) => {
             "cookie": "accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2Nzg1NzBkMWRmZGUzODJmM2IxNzkzNDgiLCJlbWFpbCI6Im5ldyBlbWFpbCIsInVzZXJuYW1lIjoiZm1mdWFkIiwiZnVsbE5hbWUiOiJOZXcgRnVsbCBuYW1lIiwiaWF0IjoxNzM3MTMzNjY3LCJleHAiOjE3MzcyMjAwNjd9.v0pOZhyixm4Q_b8B4aRYd0Tvn2Zf-ermbfD9kdRhkrk; refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2Nzg1NzBkMWRmZGUzODJmM2IxNzkzNDgiLCJpYXQiOjE3MzcxMzM1MzUsImV4cCI6MTczNzk5NzUzNX0.FRCKBe4mX9qyXjO2iD4nao2l8h2PKRkazSBdf8jiuDc"
         },
     });
-    (!deleteCommentResult.ok) ? console.log("Failedddd to delete comment during health check") : healthCheckReport.deleteComment = deleteCommentResult.json() ? true : false;
+        (!deleteCommentResult.ok) ? console.log("Failedddd to delete comment during health check") : healthCheckReport.deleteComment = deleteCommentResult.json() ? true : false;
 
     const getVideoCommentsResult = await fetch("http://127.0.0.1:8000/api/v1/comments/video/c/6787db18e42e5c4d942e642f");
     (!getVideoCommentsResult.ok) ? console.log("Failed to fetch video comments during health check") : healthCheckReport.getVideoComments = getVideoCommentsResult.json() ? true : false;
 
 
     console.log(healthCheckObject);
-    healthCheckObject = {}
+    healthCheckObject
     return res.json(new apiResponse(200, healthCheckReport, "Health check completed"));
 
 }
