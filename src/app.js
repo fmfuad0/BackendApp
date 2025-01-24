@@ -2,10 +2,13 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import dotenv from 'dotenv';
+
+import { dashboardRouter } from "./routes/dashboard.routes.js";
 import userRouter from "./routes/user.routs.js";
-dotenv.config({ path: './.env' });
 import commentRouter from "./routes/comment.routes.js";
 import healthCheckRouter from "./routes/healthCheck.routes.js";
+
+dotenv.config({ path: './.env' });
 const app = express();
 
 // Enable CORS with credentials
@@ -27,6 +30,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/health-check", healthCheckRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 
 // app.use("/api/v1/videos", videoRouter);
 // app.use("/api/v1/subscription", subscriptionRouter);

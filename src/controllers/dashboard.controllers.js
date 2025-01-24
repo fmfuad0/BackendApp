@@ -1,86 +1,143 @@
-import mongoose, { aggregate } from "mongoose"
-import { Video } from "../model/video.models.js"
-import { Subscription } from "../model/subscription.models.js"
-import { Like } from "../model/like.models.js"
-import { apiError} from "../utils/apiError.js"
+import mongoose, { Aggregate } from "mongoose"
+import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { User } from "../model/user.models.js"
-import { getUserChannelProfile } from "./user.controllers.js"
+import { User } from "../models/user.models.js"
 
 const getChannelStats = asyncHandler(async (req, res) => {
-    // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
-    const channelInfo = getUserChannelProfile(req.user?._id)
-    const videoInfo = getChannelVideos(req.user?._id)
+    console.log("Getting Channel Stats");
+    const { username } = req.user;
 
-    if(!channelInfo || !videoInfo)
-        throw new apiError(400, "Could not fetch channel and videos info")
+    const result = {}
 
-    return res
-    .status(200)
-    .json(
-        new apiResponse(200, channelInfo, videoInfo.select("-allVideos -allLikes"), "Channel states fetched")
-    )
+    try {
+        const getProfileResponse = await fetch(`${process.env.server}/users/c/${username}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${req.cookies.accessToken}`
+                }
+            }
+        )
+        const channelProfile = (await getProfileResponse.json()).data
+        result.channel = channelProfile
+    } catch (error) {
+        return res.status(500)
+            .json(
+                new apiResponse(500, null, "Error fetching channel profile")
+            )
+
+    }
+
+    try {
+        const channelStats = await User.aggregate(
+            [
+                {
+                    $match: { username: username }
+                },
+                {
+                    $lookup: {
+                        from: "videos",
+                        localField: "_id",
+                        foreignField: "owner",
+                        as: "allVideos"
+                    }
+                },
+                {
+                    $addFields: {
+                        totalVideos: { $size: "$allVideos" },
+                        totalLikes: { $sum: "$allVideos.likes" },
+                        totalDislikes: { $sum: "$allVideos.dislikes" },
+                        totalViews: { $sum: "$allVideos.views" },
+                        totalComments: { $sum: "$allVideos.comments" }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        totalVideos: 1,
+                        totalLikes: 1,
+                        totalDislikes: 1,
+                        totalViews: 1,
+                        totalComments: 1,
+
+                    }
+                }
+            ]
+        )
+        result.stats = channelStats[0]
+    } catch (error) {
+        return res.status(500)
+            .json(
+                new apiResponse(500, null, "Error fetching channel stats")
+            )
+    }
+
+    try {
+        const getVideosResponse = await fetch(`${process.env.server}/dashboard/videos`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${req.cookies.accessToken}`
+                }
+            }
+        )
+        const channelVideos = (await getVideosResponse.json()).data.allVideos
+        result.videos = channelVideos
+    } catch (error) {
+        return res.status(500)
+            .json(
+                new apiResponse(500, null, "Error fetching channel videos")
+            )
+    }
+
+    return res.status(200)
+        .json(
+            new apiResponse(200, result, "Channel stats fetched successfully"))
 })
 
 const getChannelVideos = asyncHandler(async (req, res) => {
-    const channelId = req.user?._id;
-    
-    if (!channelId) {
-        throw new apiError(400, "Channel id not found");
-    }
 
-    const channel = await User.findById(new mongoose.Types.ObjectId(channelId));
-    if (!channel) {
-        throw new apiError(404, "Channel not found");
-    }
+    console.log("getChannelVideos");
+    const { username } = req.user;
+    console.log(username);
 
-    const result = await User.aggregate([
-        {
-            $match: {
-                _id: channel._id
+    const result = await User.aggregate(
+        [
+            {
+                $match: { username: username }
+            },
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "_id",
+                    foreignField: "owner",
+                    as: "allVideos"
+                }
+            },
+            {
+                $addFields: {
+                    totalVideos: { $size: "$allVideos" },
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    allVideos: 1,
+                    totalVideos: 1
+                }
             }
-        },
-        {
-            $lookup: {
-                from: "videos", // Collection where video documents are stored
-                localField: "_id",
-                foreignField: "owner", // Assuming "owner" links video to user
-                as: "allVideos"
-            }
-        },
-        {
-            $lookup: {
-                from: "likes", // Collection where likes are stored
-                localField: "allVideos._id", // Link likes to individual videos
-                foreignField: "video", // Assuming "video" field links likes to a video
-                as: "allLikes"
-            }
-        },
-        {
-            $unwind: "$allVideos"  // Unwind the allVideos array to process individual video documents
-        },
-        {
-            $addFields: {
-                totalViews: "$allVideos.views", // Get the views from each video
-                totalLikes: { $size: "$allLikes" } // Count the number of likes per video
-            }
-        },
-        {
-            $group: {
-                _id: null,  // Group all videos together
-                totalViews: { $sum: "$totalViews" },  // Sum all views
-                totalLikes: { $sum: "$totalLikes" }   // Sum all likes
-            }
-        }
-    ]);
-
-    if (result.length > 0) {
-        return res.status(200).json(new apiResponse(200, result[0], "Videos and likes fetched"));
-    } else {
-        return res.status(404).json(new apiResponse(404, {}, "No videos found"));
-    }
+        ]
+    )
+    return res.status(200)
+        .json(
+            new apiResponse(200, result[0], "Channel videos info fetched successfully")
+        )
 });
+
+
 
 export {
     getChannelStats,

@@ -231,6 +231,8 @@ const changePassword = asyncHandler(async (req, res) => {
     const hash = bcrypt.hashSync(newPassword, salt);
     user.password = hash
     await user.save({ validateBeforeSave: false })
+    console.log("Password Changed");
+    
     return res.status(200).json(
         new apiResponse(
             200,
@@ -389,11 +391,13 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     if (!channel || channel?.length === 0) {
         throw new apiError(404, "Channel not found");
     }
-
-    return res.status(200).json({
-        status: "successfully fetched user channel",
-        data: channel[0] // Return the first result as channel
-    });
+    // console.log(channel[0]);
+    
+    return res
+    .status(200)
+    .json(
+        new apiResponse(200, channel[0], "successfully fetched user channel")
+    );
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {

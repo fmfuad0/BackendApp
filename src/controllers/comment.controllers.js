@@ -4,7 +4,6 @@ import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
-import  healthCheckObject  from "./healthcheck.controllers.js";
 
 // Fetch comments for a specific video with pagination
 const getVideoComments = asyncHandler(async (req, res, next) => {
@@ -57,8 +56,9 @@ const getVideoComments = asyncHandler(async (req, res, next) => {
 
 // Add a comment to a video
 const addComment = asyncHandler(async (req, res, next) => {
-    const { content, videoId } = req.body;
-    // console.log("add comment: ", content, videoId, req.user._id);
+    const {content} = req.body;
+    const {videoId} = req.params;
+    console.log("add comment: ", content, videoId, req.user._id);
     
     if (!content || !videoId) {
         return next(new apiError(400, "Content or videoId is missing"));
@@ -74,7 +74,6 @@ const addComment = asyncHandler(async (req, res, next) => {
             video: video._id,
             owner: req.user._id // Assuming `user_id` is added via authentication middleware
         });
-        healthCheckObject.createdComment = createdComment
         return res
         .status(200)
         .json(

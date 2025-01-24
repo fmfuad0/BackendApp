@@ -9,7 +9,7 @@ import {
 
 const commentRouter = Router();
 
-commentRouter.route("/new").post(verifyJWT, addComment)
+commentRouter.route("/new/c/:videoId").post(verifyJWT, addComment)
 commentRouter.route("/video/c/:videoId").get(getVideoComments)
 commentRouter.route("/update/c/:commentId").post(verifyJWT, updateComment)
 commentRouter.route("/delete/c/:commentId").get(verifyJWT, deleteComment)
