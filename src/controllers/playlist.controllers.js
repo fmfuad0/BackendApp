@@ -1,11 +1,10 @@
-import mongoose, { mongo } from "mongoose"
+import mongoose from "mongoose"
 import { Playlist } from "../models/playlist.models.js"
 import { User } from "../models/user.models.js"
 import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { json } from "stream/consumers"
-import { read } from "fs"
+
 
 
 const createPlaylist = asyncHandler(async (req, res) => {

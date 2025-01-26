@@ -1,8 +1,8 @@
 import mongoose, { Aggregate as aggregate } from "mongoose"
 import { User } from "../models/user.model.js"
 import { Subscription } from "../models/subscription.models.js"
-import { apiError, ApiError } from "../utils/apiError.js"
-import { apiResponse, ApiResponse } from "../utils/apiResponse.js"
+import { apiError } from "../utils/apiError.js"
+import { apiResponse } from "../utils/apiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 
 
@@ -30,9 +30,9 @@ const toggleSubscription = asyncHandler(async (req, res) => {
             throw new apiError(400, {}, "Unsubscribe operation failed")
         }
     }
-    else {
+    else if(channelInfo._id != req.user._id){ {
         const subscription = await Subscription.create({
-            subscriber: req.user,
+            subscriber: req.user._id,
             channel: channelInfo._id
         }
         )
@@ -43,7 +43,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
             .json(
                 new apiResponse(200, {}, "Subscribed")
             )
-    }
+    }}
 })
 
 // controller to return subscriber list of a channel
