@@ -26,6 +26,15 @@ const videoSchema = new Schema({
         type:Number,
         default:0
     },
+    likes:{
+        type:Number,
+        default:0
+    },
+    comments:{
+        type:Number,
+        default:0
+    },
+    
     isPublished:{
         type:Boolean,
         default:true
@@ -36,6 +45,7 @@ const videoSchema = new Schema({
     }
 
 }, {timestamps:true})
+
 
 
 

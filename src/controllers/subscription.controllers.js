@@ -1,5 +1,4 @@
-import mongoose, { Aggregate as aggregate } from "mongoose"
-import { User } from "../models/user.model.js"
+import { User } from "../models/user.models.js"
 import { Subscription } from "../models/subscription.models.js"
 import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js"
@@ -7,51 +6,49 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 
 
 const toggleSubscription = asyncHandler(async (req, res) => {
-    const { channelId } = req.params
+    const { username } = req.params
     // TODO: toggle subscription
-
-    const channelInfo = await getUserChannelProfile(new mongoose.Types.ObjectId(channelId))
-    if (!channelInfo)
+    const channel = await User.find({"username": username}).select("-password -refreshToken")
+    if(!channel)
         throw new apiError(404, "Channel not found")
-    if (channelInfo.isSubscribed) {
-        try {
-            await Subscription.findOneAndDelete(
-                {
-                    subscriber: req.user?._id,
-                    channel: channelInfo._id
-                }
-            )
+    console.log("channel: ", channel[0]);
+    const subscription = await Subscription.findOne({
+        "subscriber" : req.user._id,
+        "channel" : channel[0]._id
+    })
+    console.log(subscription);
+    try {
+        if(!subscription){
+            console.log("not found");        
+            const createdSubscription = await Subscription.create({
+                "subscriber" : req.user._id,
+                "channel" : channel[0]._id
+            })
+            console.log(createdSubscription);
             return res
-                .status(200)
-                .json(
-                    new apiResponse(200, {}, "Unsubscribed")
-                )
-        } catch (error) {
-            throw new apiError(400, {}, "Unsubscribe operation failed")
-        }
-    }
-    else if(channelInfo._id != req.user._id){ {
-        const subscription = await Subscription.create({
-            subscriber: req.user._id,
-            channel: channelInfo._id
-        }
-        )
-        if (!subscription)
-            throw new apiError(400, "Could not subscribe")
-        return res
             .status(200)
             .json(
-                new apiResponse(200, {}, "Subscribed")
+                new apiResponse(200, createdSubscription, "Subscribed")
             )
-    }}
+        }
+        else{
+            await Subscription.findByIdAndDelete(subscription._id)
+            console.log("Unsubscribed");
+            
+            return res
+            .status(200)
+            .json(
+                new apiResponse(200, {}, "Unsubscribed")
+            )
+        }   
+    } catch (error) {
+        throw new apiError(500, "Subscription toggle Operation failed")
+    }
+        
 })
 
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
-    const { channelId } = req.params
-    if (!channelId)
-        throw new apiError(400, "Invalid channelId")
-
     try {
         const userChannelsubscribers = await User.aggregate([
             {
@@ -65,6 +62,12 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
                     localField: "_id",
                     foreignField: "channel",
                     as: "userChannelSubscribers"
+                }
+            },
+            {
+                $project:{
+                    totalSubscriber:{$size:"$userChannelSubscribers"},
+                    userChannelsubscribers:1
                 }
             }
         ])
@@ -81,30 +84,26 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
-    const { subscriberId } = req.params
-    if (!subscriberId)
-        throw new apiError(400, "Invalid subscriberId")
-
     try {
-        const subscribedChannels = await User.aggregate([
+        const channels =await Subscription.aggregate([
             {
-                $match: {
-                    _id: req.user._id
+                $match:{
+                    "subscriber" : req.user._id,
                 }
             },
             {
-                $lookup: {
-                    from: "subscriptions",
-                    localField: "_id",
-                    foreignField: "subscriber",
-                    as: "subscribedChannel"
+                $project:{
+                    _id:0,
+                    channel: 1
                 }
             }
         ])
+        console.log(channels);
+        
         return res
             .status(200)
             .json(
-                new apiResponse(200, subscribedChannels[0], "Subscribed channels fetched")
+                new apiResponse(200, channels, "Subscribed channels fetched")
             )
     } catch (error) {
         throw new apiError(400, "Could not fetch data")

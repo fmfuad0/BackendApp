@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId, aggregate } from "mongoose"
+import mongoose from "mongoose"
 import { Tweet } from "../models/tweet.models.js"
 import { User } from "../models/user.models.js"
 import { apiError } from "../utils/apiError.js"
@@ -43,6 +43,12 @@ const getUserTweets = asyncHandler(async (req, res) => {
                     localField: "_id",
                     foreignField: "owner",
                     as:"userTweets"
+                }
+            },
+            {
+                $project:{
+                    userTweets:1,
+                    _id: 0
                 }
             }
         ])

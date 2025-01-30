@@ -14,7 +14,8 @@ import {
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
-    getWatchHistory
+    getWatchHistory,
+    getChannelVideos
 } from "../controllers/user.controllers.js";
 
 const userRouter = Router();
@@ -44,5 +45,7 @@ userRouter.route("/update-avatar").post(
 userRouter.route("/update-cover-image").post(upload.single("coverImage"), verifyJWT, updateUserCoverImage);
 userRouter.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 userRouter.route("/history").get(verifyJWT, getWatchHistory)
+userRouter.route("/videos/c/:username").get(verifyJWT, getChannelVideos)
+
 
 export default userRouter;

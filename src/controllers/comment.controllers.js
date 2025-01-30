@@ -10,16 +10,12 @@ const getVideoComments = asyncHandler(async (req, res, next) => {
     const { videoId } = req.params;
 
     if (!videoId) {
-        return next(new apiError(400, "Video not found. Missing ID"));
+        throw new apiError(400, "Video not found. Missing ID");
     }
 
-    // Convert videoId to ObjectId
-    const vvid = new mongoose.Types.ObjectId(videoId);
-
-    // Fetch the video by its ID
-    const video = await Video.findById(vvid);
+    const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
     if (!video) {
-        return next(new apiError(400, "Video not found."));
+        throw new apiError(400, "Video not found.");
     }
 
     // Pagination logic
@@ -30,7 +26,7 @@ const getVideoComments = asyncHandler(async (req, res, next) => {
         // Aggregation to fetch video comments
         const videoComments = await Video.aggregate([
             {
-                $match: { _id: vvid }
+                $match: { "_id": video._id }
             },
             {
                 $lookup: {
@@ -40,17 +36,16 @@ const getVideoComments = asyncHandler(async (req, res, next) => {
                     as: "videoComments"
                 }
             },
-            { $unwind: "$videoComments" }, // Optional: Unwind if you want each comment as a separate document
             { $skip: skip }, // Pagination
             { $limit: limit } // Pagination limit
         ]);
 
         // Send response with video comments        
         return res.status(200).json(
-            new apiResponse(200, videoComments, "Video comments fetched successfully")
+            new apiResponse(200, videoComments[0], "Video comments fetched successfully")
         );
     } catch (error) {
-        return next(new apiError(400, "Could not fetch video comments"));
+        throw new apiError(400, "Could not fetch video comments");
     }
 });
 
@@ -61,26 +56,29 @@ const addComment = asyncHandler(async (req, res, next) => {
     console.log("add comment: ", content, videoId, req.user._id);
     
     if (!content || !videoId) {
-        return next(new apiError(400, "Content or videoId is missing"));
+        throw new apiError(400, "Content or videoId is missing");
     }
     
     try {
         const video = await Video.findById(new mongoose.Types.ObjectId(videoId));
         if (!video) {
-            return next(new apiError(404, "Video not found"));
+            throw new apiError(404, "Video not found");
         }
         const createdComment = await Comment.create({
             content: content,
             video: video._id,
             owner: req.user._id // Assuming `user_id` is added via authentication middleware
         });
+        // console.log(createdComment);
+        await Video.findByIdAndUpdate(video._id, { $inc: { comments: 1 } }, {new:true});
+        console.log(video.comments);
         return res
         .status(200)
         .json(
             new apiResponse(200, createdComment, "Comment created successfully")
         );
     } catch (error) {
-        return next(new apiError(40, "Failed to create comment"));
+        throw new apiError(40, "Failed to create comment");
     }
 });
 
@@ -120,7 +118,8 @@ const deleteComment = asyncHandler(async (req, res, next) => {
     if (!commentId) {
         return next(new apiError(400, "Comment ID is missing"));
     }
-
+    const cc = await Comment.findById(new mongoose.Types.ObjectId(commentId));
+    console.log(cc.video);
     try {
         const comment = await Comment.findById(new mongoose.Types.ObjectId(commentId));
         if (!comment) {
@@ -128,7 +127,7 @@ const deleteComment = asyncHandler(async (req, res, next) => {
         }
 
         const deletedComment = await Comment.findByIdAndDelete(comment._id);
-
+        await Video.findByIdAndUpdate(cc.video, { $inc: { comments: -1 } });
         return res.status(200).json(
             new apiResponse(200, deletedComment, "Comment deleted successfully")
         );

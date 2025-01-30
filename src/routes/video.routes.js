@@ -11,7 +11,7 @@ import {
 } from '../controllers/video.controllers.js';
 
 
-videoRouter.route('/publish').post(upload.single("video"), verifyJWT, publishAVideo);
+videoRouter.route('/publish').post(verifyJWT, upload.single("video"), publishAVideo);
 videoRouter.route('/c/:videoId').get(getVideoById);
 videoRouter.route('/update/c/:videoId').post(verifyJWT, updateVideo);
 videoRouter.route('/delete/c/:videoId').get(verifyJWT, deleteVideo);

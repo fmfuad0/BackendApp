@@ -390,15 +390,15 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
     if (!channel || channel?.length === 0) {
         throw new apiError(404, "Channel not found");
-    }
-    // console.log(channel[0]);
-    
+    }    
     return res
     .status(200)
     .json(
         new apiResponse(200, channel[0], "successfully fetched user channel")
     );
 });
+
+
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
@@ -450,6 +450,36 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     )
 })
 
+const getChannelVideos = asyncHandler(async (req, res) => {
+    console.log("getChannelVideos");
+    const { username } = req.user;
+    const channelVideos = await User.aggregate(
+        [
+            {
+                $match: { username: username }
+            },
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "_id",
+                    foreignField: "owner",
+                    as: "allVideos"
+                }
+            },
+            {
+                $project:{
+                    allVideos:1,
+                    _id: 0
+                }
+            }
+        ]
+    )
+    return res.status(200)
+        .json(
+            new apiResponse(200, channelVideos[0], "Channel videos info fetched successfully")
+        )
+});
+
 export {
     registerUser,
     loginUser,
@@ -461,5 +491,6 @@ export {
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
-    getWatchHistory
+    getWatchHistory,
+    getChannelVideos
 }
