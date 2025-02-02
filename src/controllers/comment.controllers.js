@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
 
 // Fetch comments for a specific video with pagination
-const getVideoComments = asyncHandler(async (req, res, next) => {
+const getVideoComments = asyncHandler(async (req, res, next) => {   
     const { videoId } = req.params;
 
     if (!videoId) {
@@ -36,10 +36,15 @@ const getVideoComments = asyncHandler(async (req, res, next) => {
                     as: "videoComments"
                 }
             },
+            {
+                $project:{
+                    _id:0,
+                    videoComments :1,
+                }
+            },
             { $skip: skip }, // Pagination
             { $limit: limit } // Pagination limit
         ]);
-
         // Send response with video comments        
         return res.status(200).json(
             new apiResponse(200, videoComments[0], "Video comments fetched successfully")

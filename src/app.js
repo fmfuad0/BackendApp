@@ -17,7 +17,7 @@ dotenv.config({ path: './.env' });
 const app = express();
 
 // Enable CORS with credentials
-app.use(cors({ origin: process.env.corsOrigin, credentials: "true" }));
+app.use(cors());
 
 // Body parsers
 app.use(express.json({ limit: "16kb" }));

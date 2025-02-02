@@ -8,6 +8,8 @@ export const verifyJWT = asyncHandler(async(req, res, next)=>{
     try {
         console.log("running");
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")    
+        console.log(token);
+        
         if(!token)
             throw new apiError(400, "Unauthorized request")
         const decodedToken = jwt.verify(token, process.env.accessTokenSecret)        
